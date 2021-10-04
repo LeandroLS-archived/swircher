@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type TwitterData struct {
@@ -19,14 +20,21 @@ type Followers struct {
 	UserName string
 }
 
+func isNameSimilar(userName string, userToBeFound string) bool {
+	return strings.Contains(userName, userToBeFound)
+}
+
 func main() {
 	args := os.Args[1:]
 	lenArgs := len(args)
-	if lenArgs != 2 {
+	if lenArgs != 3 {
 		log.Fatalf("Two command lines are needed %v informed", lenArgs)
 	}
-	baseUrl := fmt.Sprintf("https://api.twitter.com/2/users/%v/followers", args[1])
-	var bearer = "Bearer " + args[0]
+	bearerToken := args[0]
+	userId := args[1]
+	userToBeFound := args[2]
+	baseUrl := fmt.Sprintf("https://api.twitter.com/2/users/%v/followers", userId)
+	var bearer = "Bearer " + bearerToken
 	req, err := http.NewRequest("GET", baseUrl, nil)
 	req.Header.Add("Authorization", bearer)
 	client := &http.Client{}
@@ -48,6 +56,8 @@ func main() {
 	}
 
 	for _, user := range twitterData.Data {
-		fmt.Printf("Name: %s Username: %s\n", user.Name, user.UserName)
+		if isNameSimilar(user.Name, userToBeFound) {
+			fmt.Printf("Name: %s Username: %s\n", user.Name, user.UserName)
+		}
 	}
 }
