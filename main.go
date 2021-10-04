@@ -1,15 +1,32 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 )
 
+type TwitterData struct {
+	Data []Followers
+}
+
+type Followers struct {
+	Id       string
+	Name     string
+	UserName string
+}
+
 func main() {
-	baseUrl := "https://api.twitter.com/2/users/764678044405686272/followers"
-	var bearer = "Bearer " + ""
+	args := os.Args[1:]
+	lenArgs := len(args)
+	if lenArgs != 2 {
+		log.Fatalf("Two command lines are needed %v informed", lenArgs)
+	}
+	baseUrl := fmt.Sprintf("https://api.twitter.com/2/users/%v/followers", args[1])
+	var bearer = "Bearer " + args[0]
 	req, err := http.NewRequest("GET", baseUrl, nil)
 	req.Header.Add("Authorization", bearer)
 	client := &http.Client{}
@@ -22,6 +39,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Cant make request")
 	}
-	fmt.Println(string(body))
+	var twitterData TwitterData
 
+	err = json.Unmarshal(body, &twitterData)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for _, user := range twitterData.Data {
+		fmt.Printf("Name: %s Username: %s\n", user.Name, user.UserName)
+	}
 }
