@@ -33,6 +33,9 @@ func main() {
 	bearerToken := args[0]
 	userId := args[1]
 	userToBeFound := args[2]
+	if !secretsFileExists() {
+		writeSecretsFile(bearerToken)
+	}
 	baseUrl := fmt.Sprintf("https://api.twitter.com/2/users/%v/followers", userId)
 	var bearer = "Bearer " + bearerToken
 	req, err := http.NewRequest("GET", baseUrl, nil)
