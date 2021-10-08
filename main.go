@@ -11,7 +11,8 @@ import (
 )
 
 type TwitterData struct {
-	Data []Followers
+	Data   []Followers
+	Status int
 }
 
 type Followers struct {
@@ -22,6 +23,12 @@ type Followers struct {
 
 func isNameSimilar(userName string, userToBeFound string) bool {
 	return strings.Contains(userName, userToBeFound)
+}
+
+func handleErr(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func main() {
@@ -42,25 +49,22 @@ func main() {
 	req.Header.Add("Authorization", bearer)
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatalf("Cant make request")
-	}
+	handleErr(err)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Cant make request")
-	}
+	handleErr(err)
 	var twitterData TwitterData
-
-	err = json.Unmarshal(body, &twitterData)
-
-	if err != nil {
-		fmt.Println(err)
+	err = json.Unmarshal([]byte(body), &twitterData)
+	handleErr(err)
+	//When twitter API returns some status, is because the API fails. Weird :(
+	if twitterData.Status == 0 {
+		log.Fatalln("Cant make request", err)
 	}
-
 	for _, user := range twitterData.Data {
+		fmt.Println(user)
 		if isNameSimilar(user.Name, userToBeFound) {
 			fmt.Printf("Name: %s Username: %s\n", user.Name, user.UserName)
 		}
 	}
+
 }
