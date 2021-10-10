@@ -10,9 +10,19 @@ import (
 	"strings"
 )
 
-type TwitterData struct {
+type TwitterAPIResponseUserInfo struct {
+	Data UserInfo
+}
+
+type TwitterAPIResponseFollowers struct {
 	Data   []Followers
 	Status int
+}
+
+type UserInfo struct {
+	Id       string
+	Name     string
+	UserName string
 }
 
 type Followers struct {
@@ -31,20 +41,26 @@ func handleErr(err error) {
 	}
 }
 
-func getUserByUserName(userName string) TwitterData {
-	baseUrl := fmt.Sprint("https://api.twitter.com/2/users/by/username/", userName)
-	req, err := http.NewRequest("GET", baseUrl, nil)
+func makeRequest(method string, url string, bearerToken string) []byte {
+	req, err := http.NewRequest(method, url, nil)
 	handleErr(err)
-	bearerToken := os.Getenv("TWITTER_BEARER_TOKEN")
-	req.Header.Add("Authorization", "Bearer "+bearerToken)
+	bearer := bearerToken
+	req.Header.Add("Authorization", "Bearer "+bearer)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	handleErr(err)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	handleErr(err)
-	var twitterData TwitterData
-	err = json.Unmarshal([]byte(body), &twitterData)
+	return body
+}
+
+func getUserByUserName(userName string) TwitterAPIResponseUserInfo {
+	baseUrl := fmt.Sprint("https://api.twitter.com/2/users/by/username/", userName)
+	bearerToken := os.Getenv("TWITTER_BEARER_TOKEN")
+	body := makeRequest("GET", baseUrl, bearerToken)
+	var twitterData TwitterAPIResponseUserInfo
+	err := json.Unmarshal([]byte(body), &twitterData)
 	handleErr(err)
 	return twitterData
 }
@@ -60,27 +76,18 @@ func main() {
 	if bearerToken == "" {
 		log.Fatalln("Environment Variable TWITTER_BEARER_TOKEN not found")
 	}
-	userId := getUserByUserName("le_limasilva")
+	user := getUserByUserName("le_limasilva")
 	userToBeFound := args[1]
-	baseUrl := fmt.Sprintf("https://api.twitter.com/2/users/%v/followers", userId)
-	var bearer = "Bearer " + bearerToken
-	req, err := http.NewRequest("GET", baseUrl, nil)
-	req.Header.Add("Authorization", bearer)
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	baseUrl := fmt.Sprintf("https://api.twitter.com/2/users/%v/followers", user.Data.Id)
+	body := makeRequest("GET", baseUrl, bearerToken)
+	var twitterData TwitterAPIResponseFollowers
+	err := json.Unmarshal([]byte(body), &twitterData)
 	handleErr(err)
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	handleErr(err)
-	var twitterData TwitterData
-	err = json.Unmarshal([]byte(body), &twitterData)
-	handleErr(err)
-	//When twitter API returns some status, is because the API fails. Weird :(
+	// When twitter API returns some status, is because the API fails. Weird :(
 	if twitterData.Status != 0 {
 		log.Fatalln("Cant make request", err)
 	}
 	for _, user := range twitterData.Data {
-		fmt.Println(user)
 		if isNameSimilar(user.Name, userToBeFound) {
 			fmt.Printf("Name: %s Username: %s\n", user.Name, user.UserName)
 		}
