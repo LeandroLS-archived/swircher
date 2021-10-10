@@ -31,7 +31,26 @@ func handleErr(err error) {
 	}
 }
 
+func getUserByUserName(userName string) TwitterData {
+	baseUrl := fmt.Sprint("https://api.twitter.com/2/users/by/username/", userName)
+	req, err := http.NewRequest("GET", baseUrl, nil)
+	handleErr(err)
+	bearerToken := os.Getenv("TWITTER_BEARER_TOKEN")
+	req.Header.Add("Authorization", "Bearer "+bearerToken)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	handleErr(err)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	handleErr(err)
+	var twitterData TwitterData
+	err = json.Unmarshal([]byte(body), &twitterData)
+	handleErr(err)
+	return twitterData
+}
+
 func main() {
+	fmt.Println()
 	args := os.Args[1:]
 	lenArgs := len(args)
 	if lenArgs != 2 {
@@ -41,11 +60,8 @@ func main() {
 	if bearerToken == "" {
 		log.Fatalln("Environment Variable TWITTER_BEARER_TOKEN not found")
 	}
-	userId := args[0]
+	userId := getUserByUserName("le_limasilva")
 	userToBeFound := args[1]
-	if !secretsFileExists() {
-		writeSecretsFile(bearerToken)
-	}
 	baseUrl := fmt.Sprintf("https://api.twitter.com/2/users/%v/followers", userId)
 	var bearer = "Bearer " + bearerToken
 	req, err := http.NewRequest("GET", baseUrl, nil)
