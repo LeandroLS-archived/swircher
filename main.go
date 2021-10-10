@@ -34,12 +34,15 @@ func handleErr(err error) {
 func main() {
 	args := os.Args[1:]
 	lenArgs := len(args)
-	if lenArgs != 3 {
+	if lenArgs != 2 {
 		log.Fatalf("Two command lines are needed %v informed", lenArgs)
 	}
-	bearerToken := args[0]
-	userId := args[1]
-	userToBeFound := args[2]
+	bearerToken := os.Getenv("TWITTER_BEARER_TOKEN")
+	if bearerToken == "" {
+		log.Fatalln("Environment Variable TWITTER_BEARER_TOKEN not found")
+	}
+	userId := args[0]
+	userToBeFound := args[1]
 	if !secretsFileExists() {
 		writeSecretsFile(bearerToken)
 	}
@@ -57,7 +60,7 @@ func main() {
 	err = json.Unmarshal([]byte(body), &twitterData)
 	handleErr(err)
 	//When twitter API returns some status, is because the API fails. Weird :(
-	if twitterData.Status == 0 {
+	if twitterData.Status != 0 {
 		log.Fatalln("Cant make request", err)
 	}
 	for _, user := range twitterData.Data {
