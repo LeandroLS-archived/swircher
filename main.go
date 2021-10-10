@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -14,21 +15,35 @@ type TwitterAPIResponseUserInfo struct {
 	Data UserInfo
 }
 
-type TwitterAPIResponseFollowers struct {
-	Data   []Followers
-	Status int
-}
-
 type UserInfo struct {
 	Id       string
 	Name     string
 	UserName string
 }
 
+type TwitterAPIResponseFollowers struct {
+	Data   []Followers
+	Status int
+}
+
 type Followers struct {
 	Id       string
 	Name     string
 	UserName string
+}
+
+func askUser() (userToCheck string, isFollowedBy string) {
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Print("Enter User: ")
+	scanner.Scan()
+	userToCheck = scanner.Text()
+	fmt.Printf("Check if %v: is followd by: ", userToCheck)
+	scanner.Scan()
+	isFollowedBy = scanner.Text()
+	if scanner.Err() != nil {
+		fmt.Println("Error: ", scanner.Err())
+	}
+	return userToCheck, isFollowedBy
 }
 
 func isNameSimilar(userName string, userToBeFound string) bool {
@@ -67,17 +82,12 @@ func getUserByUserName(userName string) TwitterAPIResponseUserInfo {
 
 func main() {
 	fmt.Println()
-	args := os.Args[1:]
-	lenArgs := len(args)
-	if lenArgs != 2 {
-		log.Fatalf("Two command lines are needed %v informed", lenArgs)
-	}
+	userToCheck, followedBy := askUser()
 	bearerToken := os.Getenv("TWITTER_BEARER_TOKEN")
 	if bearerToken == "" {
 		log.Fatalln("Environment Variable TWITTER_BEARER_TOKEN not found")
 	}
-	user := getUserByUserName("le_limasilva")
-	userToBeFound := args[1]
+	user := getUserByUserName(userToCheck)
 	baseUrl := fmt.Sprintf("https://api.twitter.com/2/users/%v/followers", user.Data.Id)
 	body := makeRequest("GET", baseUrl, bearerToken)
 	var twitterData TwitterAPIResponseFollowers
@@ -88,7 +98,7 @@ func main() {
 		log.Fatalln("Cant make request", err)
 	}
 	for _, user := range twitterData.Data {
-		if isNameSimilar(user.Name, userToBeFound) {
+		if isNameSimilar(user.Name, followedBy) {
 			fmt.Printf("Name: %s Username: %s\n", user.Name, user.UserName)
 		}
 	}
