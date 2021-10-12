@@ -22,14 +22,8 @@ type UserInfo struct {
 }
 
 type TwitterAPIResponseFollowers struct {
-	Data   []Followers
+	Data   []UserInfo
 	Status int
-}
-
-type Followers struct {
-	Id       string
-	Name     string
-	UserName string
 }
 
 func askUser() (userToCheck string, isFollowedBy string) {
@@ -37,7 +31,7 @@ func askUser() (userToCheck string, isFollowedBy string) {
 	fmt.Print("Enter User: ")
 	scanner.Scan()
 	userToCheck = scanner.Text()
-	fmt.Printf("Check if %v: is followd by: ", userToCheck)
+	fmt.Printf("Check if %v has some follower with this name: ", userToCheck)
 	scanner.Scan()
 	isFollowedBy = scanner.Text()
 	if scanner.Err() != nil {
