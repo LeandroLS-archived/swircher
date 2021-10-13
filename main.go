@@ -50,11 +50,10 @@ func handleErr(err error) {
 	}
 }
 
-func makeRequest(method string, url string, bearerToken string) []byte {
+func makeRequest(method string, url string, authorization string) []byte {
 	req, err := http.NewRequest(method, url, nil)
 	handleErr(err)
-	bearer := bearerToken
-	req.Header.Add("Authorization", "Bearer "+bearer)
+	req.Header.Add("Authorization", authorization)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	handleErr(err)
@@ -64,24 +63,17 @@ func makeRequest(method string, url string, bearerToken string) []byte {
 	return body
 }
 
-func makeTweet() []byte{
-	req, err := http.NewRequest("POST", "https://api.twitter.com/1.1/statuses/update.json?status=teste", nil)
-	handleErr(err)
-
-	req.Header.Add("Authorization", "OAuth oauth_consumer_key=\"NYgxnI8X8rsz8i8GJ7AJncNPO\", oauth_signature_method=\"HMAC-SHA1\", oauth_timestamp=\"1634157268\", oauth_nonce=\"hBMb7RQ8PuUjofdwpcAvz7CeE2BZTra1\", oauth_signature=\"xHFeP7FydiFae7SExHGqD%2Bs9F2g%3D\", oauth_token=\"740996939680993280-UdTpnznooFWij3lLd2LCUeKYlfQM8fy\", oauth_version=\"1.0\"")
-	client := &http.Client{}
-	fmt.Println(req)
-	resp, err := client.Do(req)
-	handleErr(err)
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	handleErr(err)
+func makeTweet() []byte {
+	baseUrl := fmt.Sprintf("https://api.twitter.com/1.1/statuses/update.json?status=%v", "teste")
+	fmt.Println(baseUrl)
+	auth0 := "OAuth oauth_consumer_key=\"NYgxnI8X8rsz8i8GJ7AJncNPO\", oauth_signature_method=\"HMAC-SHA1\", oauth_timestamp=\"1634157268\", oauth_nonce=\"hBMb7RQ8PuUjofdwpcAvz7CeE2BZTra1\", oauth_signature=\"xHFeP7FydiFae7SExHGqD%2Bs9F2g%3D\", oauth_token=\"740996939680993280-UdTpnznooFWij3lLd2LCUeKYlfQM8fy\", oauth_version=\"1.0\""
+	body := makeRequest("POST", baseUrl, auth0)
 	return body
 }
 
 func getUserByUserName(userName string) TwitterAPIResponseUserInfo {
 	baseUrl := fmt.Sprint("https://api.twitter.com/2/users/by/username/", userName)
-	bearerToken := os.Getenv("TWITTER_BEARER_TOKEN")
+	bearerToken := "Bearer " + os.Getenv("TWITTER_BEARER_TOKEN")
 	body := makeRequest("GET", baseUrl, bearerToken)
 	var twitterData TwitterAPIResponseUserInfo
 	err := json.Unmarshal([]byte(body), &twitterData)
